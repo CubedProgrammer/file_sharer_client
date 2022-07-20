@@ -5,6 +5,7 @@
 #include<sys/socket.h>
 #include<termios.h>
 #include<unistd.h>
+#include"conrd.h"
 #include"msg.h"
 #ifndef PORT
 #define PORT 2203
@@ -15,6 +16,24 @@ int conn(const char *host, int port);
 int main(int argl, char *argv[])
 {
     puts("Welcome to file_sharer.");
+    const char *host = argv[1];
+    int succ;
+    char hostbuf[91];
+    if(host == NULL)
+    {
+        nohost:
+        fputs("Enter the internet address of the host: ", stdout);
+        scanf("%s", hostbuf);
+        host = hostbuf;
+    }
+    int sock = 0;
+    if(*host != '\0')
+        sock = conn(host, PORT);
+    if(sock == -1)
+    {
+        puts("\033\13331mConnection failed.\033\133m");
+        goto nohost;
+    }
 #ifdef _WIN32
     HANDLE ho = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD cm;
@@ -37,27 +56,23 @@ int main(int argl, char *argv[])
     if(!isatty(STDOUT_FILENO))
 #endif
         fputs("Redirecting the output of this program is inadvisable.\n", stderr);
-    const char *host = argv[1];
-    int succ;
-    char hostbuf[91];
-    if(host == NULL)
-    {
-        nohost:
-        fputs("Enter the internet address of the host: ", stdout);
-        scanf("%s", hostbuf);
-        host = hostbuf;
-    }
-    int sock = 0;
-    if(*host != '\0')
-        sock = conn(host, PORT);
-    if(sock == -1)
-    {
-        puts("\033\13331mConnection failed.\033\133m");
-        goto nohost;
-    }
-    else if(sock)
+    if(sock)
     {
         puts("Connection successful.");
+        puts("Press q to quit, c to create a room for upload, j to join to download.");
+        puts("Press d to display the file when downloaded (default), s to save.");
+        fs_msg_t msgt;
+        char cmd;
+        for(cmd = gch; cmd != 'q'; cmd = gch)
+        {
+            switch(cmd)
+            {
+                default:
+                    ring;
+            }
+        }
+        msgt = QUIT;
+        PUTOBJ(sock, msgt);
     }
 #ifndef _WIN32
     tcsetattr(STDIN_FILENO, TCSANOW, &old);
