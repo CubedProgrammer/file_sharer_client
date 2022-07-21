@@ -46,7 +46,7 @@ uint64_t rdnum(void)
     for(const char *it = cbuf; *it != '\0'; ++it)
     {
         ch = *it;
-        num *= 10;
+        num *= 16;
         if(ch >= '0' && ch <= '9')
             num += ch - '0';
         else if(ch >= 'a' && ch <= 'f')

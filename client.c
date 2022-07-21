@@ -7,6 +7,7 @@
 #include<unistd.h>
 #include"conrd.h"
 #include"msg.h"
+#include"sharing.h"
 #ifndef PORT
 #define PORT 2203
 #endif
@@ -64,6 +65,7 @@ int main(int argl, char *argv[])
         puts("Show file");
         fs_msg_t msgt;
         uint64_t rnum;
+        uint32_t rnumpart;
         char display = 1;
         char cmd;
         for(cmd = gch; cmd != 'q'; cmd = gch)
@@ -77,7 +79,21 @@ int main(int argl, char *argv[])
                     fputs("Enter room number: ", stdout);
                     rnum = rdnum();
                     putchar('\n');
-                    printf("Attempting to join room %lu.\n", rnum);
+                    printf("Attempting to join room %lx.\n", rnum);
+                    msgt = RECEIPIENT;
+                    PUTOBJ(sock, msgt);
+                    msgt = ROOMNUM;
+                    PUTOBJ(sock, msgt);
+                    rnumpart = rnum >> 32;
+                    rnumpart = htonl(rnumpart);
+                    PUTOBJ(sock, rnumpart);
+                    rnumpart = htonl(rnum);
+                    PUTOBJ(sock, rnumpart);
+                    GETOBJ(sock, msgt);
+                    if(msgt == JOINSUCC)
+                        receipient(sock);
+                    else
+                        puts("Joining failed.");
                     break;
                 case'd':
                     display = 0;
