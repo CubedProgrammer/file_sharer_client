@@ -61,18 +61,39 @@ int main(int argl, char *argv[])
         puts("Connection successful.");
         puts("Press q to quit, c to create a room for upload, j to join to download.");
         puts("Press d to display the file when downloaded (default), s to save.");
+        puts("Show file");
         fs_msg_t msgt;
+        uint64_t rnum;
+        char display = 1;
         char cmd;
         for(cmd = gch; cmd != 'q'; cmd = gch)
         {
             switch(cmd)
             {
+                case'c':
+                    break;
+                case'j':
+                    printf("Press Ctrl+%c to hide or show.\n", HIDE + 'A' - 1);
+                    fputs("Enter room number: ", stdout);
+                    rnum = rdnum();
+                    putchar('\n');
+                    printf("Attempting to join room %lu.\n", rnum);
+                    break;
+                case'd':
+                    display = 0;
+                    puts("\033\133FShow file");
+                    break;
+                case's':
+                    display = 0;
+                    puts("\033\133FSave file");
+                    break;
                 default:
                     ring;
             }
         }
         msgt = QUIT;
         PUTOBJ(sock, msgt);
+        puts("Exiting");
     }
 #ifndef _WIN32
     tcsetattr(STDIN_FILENO, TCSANOW, &old);
@@ -87,7 +108,7 @@ int conn(const char *host, int port)
     {
         struct sockaddr_in addrin;
         addrin.sin_family = AF_INET;
-        addrin.sin_port = port;
+        addrin.sin_port = htons(port);
         int succ = inet_aton(host, &addrin.sin_addr);
         if(succ)
         {

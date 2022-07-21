@@ -12,7 +12,7 @@
 #define RETURNKEY '\n'
 #define gch tolower(getchar())
 #endif
-#define HIDE 1
+#define HIDE 2
 #define ring putchar('\a')
 
 uint64_t rdnum(void);
