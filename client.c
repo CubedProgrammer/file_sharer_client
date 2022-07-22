@@ -64,6 +64,7 @@ int main(int argl, char *argv[])
         puts("Press d to display the file when downloaded (default), s to save.");
         puts("Show file");
         fs_msg_t msgt;
+        char msgnam[13];
         uint64_t rnum;
         uint32_t rnumpart;
         char display = 1;
@@ -73,6 +74,24 @@ int main(int argl, char *argv[])
             switch(cmd)
             {
                 case'c':
+                    msgt = UPLOADER;
+                    PUTOBJ(sock, msgt);
+                    GETOBJ(sock, msgt);
+                    if(msgt == ROOMNUM)
+                    {
+                        GETOBJ(sock, rnumpart);
+                        rnum = htonl(rnumpart);
+                        rnum <<= 32;
+                        GETOBJ(sock, rnumpart);
+                        rnum |= htonl(rnumpart);
+                        printf("%lx is the room number.\n", rnum);
+                        uploader(sock);
+                    }
+                    else
+                    {
+                        get_msg_name(msgt, msgnam);
+                        printf("Server sent an invalid message, %s.\n", msgnam);
+                    }
                     break;
                 case'j':
                     printf("Press Ctrl+%c to hide or show.\n", HIDE + 'A' - 1);
@@ -97,7 +116,7 @@ int main(int argl, char *argv[])
                         puts("Joining failed.");
                     break;
                 case'd':
-                    display = 0;
+                    display = 1;
                     puts("\033\133FShow file");
                     break;
                 case's':

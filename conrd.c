@@ -34,8 +34,8 @@ uint64_t rdnum(void)
         }
         else if(ch == BACKSPACE && ind)
         {
-            cbuf[ind] = '\0';
             --ind;
+            cbuf[ind] = '\0';
             if(!hidden)
                 fputs("\b \b", stdout);
         }
