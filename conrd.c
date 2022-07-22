@@ -42,7 +42,6 @@ uint64_t rdnum(void)
         else
             ring;
     }
-    printf("\033\133%zuD%s", ind, spacebar);
     for(const char *it = cbuf; *it != '\0'; ++it)
     {
         ch = *it;

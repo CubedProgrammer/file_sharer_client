@@ -79,7 +79,6 @@ int main(int argl, char *argv[])
                     fputs("Enter room number: ", stdout);
                     rnum = rdnum();
                     putchar('\n');
-                    printf("Attempting to join room %lx.\n", rnum);
                     msgt = RECEIPIENT;
                     PUTOBJ(sock, msgt);
                     msgt = ROOMNUM;
@@ -92,6 +91,8 @@ int main(int argl, char *argv[])
                     GETOBJ(sock, msgt);
                     if(msgt == JOINSUCC)
                         receipient(sock);
+                    else if(msgt == JOINFAIL)
+                        puts("Room doesn't exist.");
                     else
                         puts("Joining failed.");
                     break;
