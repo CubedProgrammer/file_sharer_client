@@ -11,13 +11,124 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<sys/select.h>
+#include<time.h>
 #include<unistd.h>
 #include"conrd.h"
 #include"msg.h"
 
-void receipient(int sock)
+void receipient(int sock, char display)
 {
     puts("You are waiting to receive a file from your host.");
+    int in = STDIN_FILENO;
+    struct timeval tv, *tvp = &tv;
+    fd_set fds, *fdsp = &fds;
+    int ready;
+    char unsigned szstr[8];
+    char bufszstr[13], *rawbufsz;
+    void *buf;
+    size_t fsz, tot;
+    size_t displaymark, bufsz;
+    double prog;
+    ssize_t bc;
+    const char fname[] = "file_sharer_temporary_file";
+    FILE *fh;
+    char cmd, msgt;
+    char msgnam[13];
+    char ended = 0;
+    while(!ended)
+    {
+        tv.tv_usec = 0;
+        tv.tv_sec = 1800;
+        FD_ZERO(fdsp);
+        FD_SET(in, fdsp);
+        FD_SET(sock, fdsp);
+        ready = select(sock + 1, fdsp, NULL, NULL, tvp);
+        if(FD_ISSET(in, fdsp))
+        {
+            cmd = gchlo;
+            if(cmd == 'q')
+            {
+                msgt = QUIT;
+                PUTOBJ(sock, msgt);
+                ended = 1;
+            }
+            else
+                ring;
+        }
+        if(FD_ISSET(sock, fdsp))
+        {
+            GETOBJ(sock, msgt);
+            if(msgt == SENDFILE)
+            {
+                bc = read(sock, szstr, sizeof szstr);
+                if(bc < 8)
+                    puts("Server did not send enough data.");
+                else
+                {
+                    rawbufsz = getenv("SHAREBUFSZ");
+                    if(rawbufsz == NULL)
+                        bufsz = 16384;
+                    else
+                    {
+                        strcpy(bufszstr, rawbufsz);
+                        bufsz = atoi(bufszstr);
+                    }
+                    fsz = 0;
+                    tot = 0;
+                    for(ssize_t i = 0; i < bc; ++i)
+                        fsz <<= 8, fsz += szstr[i];
+                    displaymark = 1048576;
+                    if(bufsz < fsz)
+                        bufsz = fsz;
+                    buf = malloc(bufsz);
+                    if(buf == NULL)
+                        perror("Memory allocation failed.");
+                    else
+                    {
+                        if(display)
+                            fh = stdout;
+                        else
+                        {
+                            fh = fopen(fname, "w");
+                            putchar('\n');
+                            if(fh == NULL)
+                                perror("Could not open file for writing");
+                        }
+                        bc = read(sock, buf, bufsz);
+                        tot += bc;
+                        fwrite(buf, 1, bufsz, fh);
+                        while(bc == bufsz)
+                        {
+                            bc = read(sock, buf, bufsz);
+                            tot += bc;
+                            fwrite(buf, 1, bc, fh);
+                            if(!display && tot > displaymark)
+                            {
+                                prog = tot;
+                                prog /= fsz;
+                                printf("\r%zu/%zu, %.1f%% complete.\n", tot, fsz, prog * 100);
+                                displaymark += 1048576;
+                            }
+                        }
+                        if(!display)
+                        {
+                            prog = tot;
+                            prog /= fsz;
+                            printf("\r%zu/%zu, %.1f%% complete.\n", tot, fsz, prog * 100);
+                            fclose(fh);
+                        }
+                        free(buf);
+                    }
+                }
+            }
+            else
+            {
+                get_msg_name(msgt, msgnam);
+                printf("Server sent invalid message: %s\n", msgnam);
+            }
+        }
+    }
 }
 
 void uploader(int sock)
@@ -36,7 +147,8 @@ void uploader(int sock)
     struct dirent *den;
     unsigned matchcnt;
     FILE *fh;
-    char fszbuf[8], bufszstr[13];
+    char unsigned fszbuf[8];
+    char bufszstr[13];
     char *envstr;
     void *buf;
     long beginpos, endpos;
@@ -126,6 +238,8 @@ void uploader(int sock)
                     }
                     if((long)bufsz > endpos)
                         bufsz = endpos;
+                    for(size_t i = 0; i < sizeof(fszbuf); ++i)
+                        fszbuf[i] = (long unsigned)endpos >> (sizeof(fszbuf) - i - 1) * 8;
                     buf = malloc(bufsz);
                     if(buf == NULL)
                         fputs("Memory allocation failed.\n", stderr);
@@ -133,6 +247,7 @@ void uploader(int sock)
                     {
                         msgt = SENDFILE;
                         PUTOBJ(sock, msgt);
+                        write(sock, fszbuf, sizeof fszbuf);
                         nxupd = bu = 0;
                         while(!feof(fh))
                         {

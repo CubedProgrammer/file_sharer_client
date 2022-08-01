@@ -10,7 +10,7 @@
 #ifndef Included_sharing_h
 #define Included_sharing_h
 
-void receipient(int sock);
+void receipient(int sock, char display);
 void uploader(int sock);
 
 #endif

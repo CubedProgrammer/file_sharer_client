@@ -118,7 +118,7 @@ int main(int argl, char *argv[])
                     PUTOBJ(sock, rnumpart);
                     GETOBJ(sock, msgt);
                     if(msgt == JOINSUCC)
-                        receipient(sock);
+                        receipient(sock, display);
                     else if(msgt == JOINFAIL)
                         puts("Room doesn't exist.");
                     else
