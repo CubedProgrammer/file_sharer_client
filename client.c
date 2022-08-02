@@ -25,6 +25,7 @@ int conn(const char *host, int port);
 
 int main(int argl, char *argv[])
 {
+    setvbuf(stdout, NULL, _IONBF, 0);
     puts("Welcome to file_sharer.");
     const char *host = argv[1];
     int succ;

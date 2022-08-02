@@ -31,7 +31,7 @@ void receipient(int sock, char display)
     size_t displaymark, bufsz;
     double prog;
     ssize_t bc;
-    const char fname[] = "file_sharer_temporary_file";
+    char fname[20];
     FILE *fh;
     char cmd, msgt;
     char msgnam[13];
@@ -90,6 +90,7 @@ void receipient(int sock, char display)
                             fh = stdout;
                         else
                         {
+                            sprintf(fname, "%08x.file_share", (unsigned)time(NULL));
                             fh = fopen(fname, "w");
                             putchar('\n');
                             if(fh == NULL)
@@ -103,13 +104,15 @@ void receipient(int sock, char display)
                             bc = read(sock, buf, bufsz);
                             tot += bc;
                             fwrite(buf, 1, bc, fh);
-                            if(!display && tot > displaymark)
+                            //if(!display && tot > displaymark)
                             {
                                 prog = tot;
                                 prog /= fsz;
                                 printf("\r%zu/%zu, %.1f%% complete.\n", tot, fsz, prog * 100);
                                 displaymark += 1048576;
                             }
+                            if(tot >= fsz)
+                                bc = 0;
                         }
                         if(!display)
                         {
@@ -121,6 +124,13 @@ void receipient(int sock, char display)
                         free(buf);
                     }
                 }
+            }
+            else if(msgt == CLOSEROOM || msgt == QUIT)
+            {
+                puts("Room has been closed.");
+                puts("No longer connected to server, press q to quit.");
+                close(sock);
+                ended = 1;
             }
             else
             {
@@ -163,6 +173,8 @@ void uploader(int sock)
                 slashp = strrchr(filename, '/');
                 if(slashp == NULL)
                     dir = opendir("."), slashp = filename;
+                else if(slashp == filename)
+                    dir = opendir("/"), ++slashp;
                 else
                 {
                     *slashp = '\0';
@@ -171,7 +183,11 @@ void uploader(int sock)
                     ++slashp;
                 }
                 if(dir == NULL)
+                {
                     perror("Autocomplete failed");
+                    fnlen = 0;
+                    filename[0] = '\0';
+                }
                 else
                 {
                     den = readdir(dir);
@@ -199,7 +215,7 @@ void uploader(int sock)
                     else if(matchcnt == 1)
                     {
                         *--nextmatch = '\0';
-                        strcpy(filename, matches);
+                        strcpy(slashp, matches);
                         printf("\r%s", filename);
                         fnlen = strlen(filename);
                     }
