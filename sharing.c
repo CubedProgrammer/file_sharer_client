@@ -31,11 +31,11 @@ void receipient(int sock, char display)
     size_t displaymark, bufsz;
     double prog;
     ssize_t bc;
-    char fname[20];
     FILE *fh;
     char cmd, msgt;
-    char msgnam[13];
+    char msgnam[13], fname[20];
     char ended = 0;
+    sprintf(fname, "%08x.file_share", (unsigned)time(NULL));
     while(!ended)
     {
         tv.tv_usec = 0;
@@ -79,7 +79,7 @@ void receipient(int sock, char display)
                     for(ssize_t i = 0; i < bc; ++i)
                         fsz <<= 8, fsz += szstr[i];
                     displaymark = 1048576;
-                    if(bufsz < fsz)
+                    if(fsz < bufsz)
                         bufsz = fsz;
                     buf = malloc(bufsz);
                     if(buf == NULL)
@@ -90,7 +90,6 @@ void receipient(int sock, char display)
                             fh = stdout;
                         else
                         {
-                            sprintf(fname, "%08x.file_share", (unsigned)time(NULL));
                             fh = fopen(fname, "w");
                             putchar('\n');
                             if(fh == NULL)
@@ -103,14 +102,14 @@ void receipient(int sock, char display)
                         {
                             bc = read(sock, buf, bufsz);
                             tot += bc;
-                            fwrite(buf, 1, bc, fh);
-                            //if(!display && tot > displaymark)
+                            if(!display && tot > displaymark)
                             {
                                 prog = tot;
                                 prog /= fsz;
-                                printf("\r%zu/%zu, %.1f%% complete.\n", tot, fsz, prog * 100);
+                                printf("\r%zu/%zu, %.1f%% complete.", tot, fsz, prog * 100);
                                 displaymark += 1048576;
                             }
+                            fwrite(buf, 1, bc, fh);
                             if(tot >= fsz)
                                 bc = 0;
                         }
@@ -118,7 +117,7 @@ void receipient(int sock, char display)
                         {
                             prog = tot;
                             prog /= fsz;
-                            printf("\r%zu/%zu, %.1f%% complete.\n", tot, fsz, prog * 100);
+                            printf("\r%zu/%zu, %.1f%% complete.", tot, fsz, prog * 100);
                             fclose(fh);
                         }
                         free(buf);
