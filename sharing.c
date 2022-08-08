@@ -33,9 +33,11 @@ void receipient(int sock, char display)
     ssize_t bc;
     FILE *fh;
     char cmd, msgt;
+    char *rfpath;
     char msgnam[13], fname[20];
     char ended = 0;
-    sprintf(fname, "%08x.file_share", (unsigned)time(NULL));
+    if(!display)
+        sprintf(fname, "%08x.file_share", (unsigned)time(NULL));
     while(!ended)
     {
         tv.tv_usec = 0;
@@ -98,7 +100,7 @@ void receipient(int sock, char display)
                         bc = read(sock, buf, bufsz);
                         tot += bc;
                         fwrite(buf, 1, bufsz, fh);
-                        while(bc == bufsz)
+                        while(bc)
                         {
                             bc = read(sock, buf, bufsz);
                             tot += bc;
@@ -119,6 +121,14 @@ void receipient(int sock, char display)
                             prog /= fsz;
                             printf("\r%zu/%zu, %.1f%% complete.", tot, fsz, prog * 100);
                             fclose(fh);
+                            rfpath = realpath(fname, NULL);
+                            if(rfpath == NULL)
+                                perror("realpath failed");
+                            else
+                            {
+                                printf("File will be saved to %s.\n", rfpath);
+                                free(rfpath);
+                            }
                         }
                         free(buf);
                     }
